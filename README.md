@@ -1,4 +1,9 @@
+
 #### The project is currently only available in Chinese
+
+
+## Usage/使用
+https://feiiish.github.io/PhotoMerging/
 
 # PhotoMerging/图片合成
 
@@ -12,9 +17,6 @@
 - fully runs on local 完全本地运行
 - Also suitable for making sprite-sheet in game development. 适合游戏开发，制作sprite-sheet场景
 
-## Usage/如何使用
-
-1. download the source code, run the `index.html` 下载源代码，运行‘ index.html ’
 
 ## Future plan/之后再说
 - Adding multi language 添加多语言
