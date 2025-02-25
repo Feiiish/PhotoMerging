@@ -1,0 +1,79 @@
+@font-face {
+    font-family: 'PixelFont'; /* 你可以自定义这个字体名称 */
+    src: url('fonts/IPix.ttf') format('truetype'); /* 确保路径正确 */
+}
+
+/* 像素风格背景 */
+body {
+    background-image: url('images/pixel-bg.png'); /* 确保路径正确 */
+    background-size: 512px 512px; /* 放大铺满 */
+    background-repeat: repeat; /* 平铺 */
+    image-rendering: pixelated; /* 让像素不模糊 */
+    text-align: center; /* 文本居中 */
+    font-family: Arial, sans-serif;
+    color: white;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    justify-content: center;
+
+
+    font-family: 'PixelFont', sans-serif;
+}
+
+/* 标题单独居中 */
+h1 {
+    font-size: 40px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* 让主要内容块居中 */
+#container {
+    background: rgba(0, 0, 0, 0.2); /* 半透明黑色背景 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+}
+
+/* 让文件选择和输入框在一行 */
+.input-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* 放大合并按钮 */
+#mergeBtn {
+    font-size: 22px;
+    padding: 15px 30px;
+    border: none;
+    background: #ffffff;
+    color: black;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s, transform 0.2s;
+}
+
+#mergeBtn:hover {
+    background: #67e079;
+    transform: scale(1.1);
+}
+
+/* 让 Canvas 适应屏幕 */
+#spriteCanvas {
+    border: 2px solid white;
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+}
