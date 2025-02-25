@@ -2,11 +2,11 @@
 #### The project is currently only available in Chinese
 
 
-## Usage/使用
-https://feiiish.github.io/PhotoMerging/
+
 
 # PhotoMerging/图片合成
-
+## Usage/使用
+https://feiiish.github.io/PhotoMerging/
 - This project is a simple image merging tool where you can merge multiple images into one.
 - 该项目是一个简单的图像合并工具，您可以将多个图像合并为一个。
 
