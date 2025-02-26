@@ -7,24 +7,24 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>图片合并工具</h1> <!-- 标题独立，居中 -->
+    <h1>Image merge tool</h1> <!-- 标题独立，居中 -->
     <div id="container">
-        <h2>合并多个图片或者生成spritesheet</h2>
+        <h2>Merge multiple images or create a spritesheet</h2>
 
         <!-- 文件选择和行数输入放在一行 -->
         <div class="input-group">
             <input type="file" id="fileInput" multiple accept="image/*">
-            <label for="columnsInput">每行数量：</label>
+            <label for="columnsInput">Numbers per row：</label>
             <input type="number" id="columnsInput" min="1" value="3" style="width: 50px;">
         </div>
 
         <!-- 更大的合并按钮 -->
-        <button id="mergeBtn" onclick="mergeAndDownload()">合并并下载</button>
+        <button id="mergeBtn" onclick="mergeAndDownload()">Merge</button>
 
-        <h3>预览:</h3>
+        <h3>preview:</h3>
         <div id="preview"></div>
 
-        <h3>合成结果:</h3>
+        <h3>result:</h3>
         <canvas id="spriteCanvas"></canvas>
     </div>
 
@@ -52,7 +52,7 @@
 
         function mergeAndDownload() {
             if (images.length === 0) {
-                alert("请先上传图片！");
+                alert("Please upload images first！");
                 return;
             }
 
