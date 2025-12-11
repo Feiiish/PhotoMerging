@@ -28,69 +28,119 @@
         <canvas id="spriteCanvas"></canvas>
     </div>
 
-    <script>
-        let images = [];
+  <script>
+    let images = [];
+    let fileList = []; // 保存文件顺序，支持排序
 
-        document.getElementById("fileInput").addEventListener("change", function(event) {
-            images = [];
-            document.getElementById("preview").innerHTML = "";
-            
-            Array.from(event.target.files).forEach(file => {
+    document.getElementById("fileInput").addEventListener("change", function(event) {
+        images = [];
+        fileList = Array.from(event.target.files);
+
+        const preview = document.getElementById("preview");
+        preview.innerHTML = "";
+        preview.classList.add("draggable-list");
+
+        fileList.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const li = document.createElement("div");
+                li.className = "draggable-item";
+                li.draggable = true;
+                li.dataset.index = index;
+
+                li.innerHTML = `<img src="${e.target.result}" style="width:50px;">`;
+
+                preview.appendChild(li);
+
                 const img = new Image();
-                img.src = URL.createObjectURL(file);
-                img.onload = () => {
-                    images.push(img);
-                };
-                
-                const previewImg = document.createElement("img");
-                previewImg.src = img.src;
-                previewImg.style.width = "50px";
-                previewImg.style.margin = "5px";
-                document.getElementById("preview").appendChild(previewImg);
-            });
+                img.src = e.target.result;
+                img.onload = () => images[index] = img;
+            };
+            reader.readAsDataURL(file);
         });
 
-        function mergeAndDownload() {
-            if (images.length === 0) {
-                alert("Please upload images first！");
-                return;
+        enableDragSort();
+    });
+
+    function enableDragSort() {
+        const container = document.getElementById("preview");
+        let dragging = null;
+
+        container.addEventListener("dragstart", (e) => {
+            if (e.target.classList.contains("draggable-item")) {
+                dragging = e.target;
+                e.dataTransfer.effectAllowed = "move";
             }
+        });
 
-            let columns = parseInt(document.getElementById("columnsInput").value) || 1;
-            let rows = Math.ceil(images.length / columns);
-
-            let maxWidth = 0, maxHeight = 0;
-            images.forEach(img => {
-                maxWidth = Math.max(maxWidth, img.width);
-                maxHeight = Math.max(maxHeight, img.height);
-            });
-
-            const canvas = document.getElementById("spriteCanvas");
-            canvas.width = columns * maxWidth;
-            canvas.height = rows * maxHeight;
-            const ctx = canvas.getContext("2d");
-
-            let x = 0, y = 0;
-            images.forEach((img, index) => {
-                ctx.drawImage(img, x * maxWidth, y * maxHeight);
-                x++;
-                if (x >= columns) {
-                    x = 0;
-                    y++;
+        container.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const target = e.target.closest(".draggable-item");
+            if (target && target !== dragging) {
+                const rect = target.getBoundingClientRect();
+                const offset = e.clientY - rect.top;
+                if (offset > rect.height / 2) {
+                    target.after(dragging);
+                } else {
+                    target.before(dragging);
                 }
-            });
+            }
+        });
 
-            // 让 Canvas 适应屏幕
-            canvas.style.width = "100%";
-            canvas.style.maxWidth = "400px";
-            canvas.style.height = "auto";
+        container.addEventListener("drop", () => updateImageOrder());
+    }
 
-            // 直接下载
-            const link = document.createElement("a");
-            link.download = "sprite_sheet.png";
-            link.href = canvas.toDataURL("image/png");
-            link.click();
+    // 更新 images 数组顺序
+    function updateImageOrder() {
+        const items = document.querySelectorAll(".draggable-item");
+        const newImages = [];
+
+        items.forEach(item => {
+            const idx = item.dataset.index;
+            newImages.push(images[idx]);
+        });
+
+        images = newImages;
+    }
+
+    function mergeAndDownload() {
+        if (images.length === 0) {
+            alert("Please upload images first！");
+            return;
         }
-    </script>
+
+        const columns = parseInt(document.getElementById("columnsInput").value) || 1;
+        const rows = Math.ceil(images.length / columns);
+
+        let maxWidth = 0, maxHeight = 0;
+        images.forEach(img => {
+            maxWidth = Math.max(maxWidth, img.width);
+            maxHeight = Math.max(maxHeight, img.height);
+        });
+
+        const canvas = document.getElementById("spriteCanvas");
+        canvas.width = columns * maxWidth;
+        canvas.height = rows * maxHeight;
+
+        const ctx = canvas.getContext("2d");
+
+        let x = 0, y = 0;
+        images.forEach(img => {
+            ctx.drawImage(img, x * maxWidth, y * maxHeight);
+            x++;
+            if (x >= columns) { x = 0; y++; }
+        });
+
+        canvas.style.width = "100%";
+        canvas.style.maxWidth = "400px";
+        canvas.style.height = "auto";
+
+        const link = document.createElement("a");
+        link.download = "sprite_sheet.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }
+</script>
+
 </body>
 </html>
