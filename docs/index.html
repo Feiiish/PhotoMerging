@@ -28,84 +28,146 @@
         <canvas id="spriteCanvas"></canvas>
     </div>
 
-  <script>
-    let images = [];
-    let fileList = []; // 保存文件顺序，支持排序
+ <script>
+    let images = [];           // 存放 Image 对象（顺序决定最终排列顺序）
+    let imageBlobs = [];       // 存放原始 File 对象对应的 blob URL（用于预览）
 
+    // 当选择文件后
     document.getElementById("fileInput").addEventListener("change", function(event) {
         images = [];
-        fileList = Array.from(event.target.files);
+        imageBlobs = [];
+        const previewDiv = document.getElementById("preview");
+        previewDiv.innerHTML = "";
 
-        const preview = document.getElementById("preview");
-        preview.innerHTML = "";
-        preview.classList.add("draggable-list");
+        Array.from(event.target.files).forEach(file => {
+            const blobUrl = URL.createObjectURL(file);
+            imageBlobs.push(blobUrl);
 
-        fileList.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const li = document.createElement("div");
-                li.className = "draggable-item";
-                li.draggable = true;
-                li.dataset.index = index;
-
-                li.innerHTML = `<img src="${e.target.result}" style="width:50px;">`;
-
-                preview.appendChild(li);
-
-                const img = new Image();
-                img.src = e.target.result;
-                img.onload = () => images[index] = img;
+            const img = new Image();
+            img.src = blobUrl;
+            img.onload = () => {
+                images.push(img);
             };
-            reader.readAsDataURL(file);
+
+            // 创建可拖动的预览项
+            const item = document.createElement("div");
+            item.className = "preview-item";
+            item.draggable = true;
+            item.dataset.index = imageBlobs.length - 1;
+
+            const previewImg = document.createElement("img");
+            previewImg.src = blobUrl;
+            previewImg.style.width = "60px";
+            previewImg.style.height = "60px";
+            previewImg.style.objectFit = "cover";
+            previewImg.style.borderRadius = "4px";
+
+            const removeBtn = document.createElement("span");
+            removeBtn.textContent = "×";
+            removeBtn.style.marginLeft = "5px";
+            removeBtn.style.cursor = "pointer";
+            removeBtn.style.color = "red";
+            removeBtn.style.fontSize = "18px";
+            removeBtn.onclick = () => removeImage(item);
+
+            item.appendChild(previewImg);
+            item.appendChild(removeBtn);
+            previewDiv.appendChild(item);
         });
 
-        enableDragSort();
+        // 绑定拖拽事件（在所有图片加载完后也可以，这里直接在每次选择文件后重新绑定）
+        makeSortable();
     });
 
-    function enableDragSort() {
-        const container = document.getElementById("preview");
-        let dragging = null;
+    // 删除某张图片
+    function removeImage(item) {
+        const index = Array.from(item.parentNode.children).indexOf(item);
+        // 移除对应的 Image 对象和 blobURL
+        images.splice(index, 1);
+        URL.revokeObjectURL(imageBlobs[index]);
+        imageBlobs.splice(index, 1);
 
-        container.addEventListener("dragstart", (e) => {
-            if (e.target.classList.contains("draggable-item")) {
-                dragging = e.target;
-                e.dataTransfer.effectAllowed = "move";
-            }
-        });
-
-        container.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            const target = e.target.closest(".draggable-item");
-            if (target && target !== dragging) {
-                const rect = target.getBoundingClientRect();
-                const offset = e.clientY - rect.top;
-                if (offset > rect.height / 2) {
-                    target.after(dragging);
-                } else {
-                    target.before(dragging);
-                }
-            }
-        });
-
-        container.addEventListener("drop", () => updateImageOrder());
+        // 重新渲染列表
+        renderPreviewList();
     }
 
-    // 更新 images 数组顺序
-    function updateImageOrder() {
-        const items = document.querySelectorAll(".draggable-item");
-        const newImages = [];
+    // 重新渲染预览列表（删除或拖拽后调用）
+    function renderPreviewList() {
+        const previewDiv = document.getElementById("preview");
+        previewDiv.innerHTML = "";
 
+        imageBlobs.forEach((blobUrl, i) => {
+            const item = document.createElement("div");
+            item.className = "preview-item";
+            item.draggable = true;
+            item.dataset.index = i;
+
+            const img = document.createElement("img");
+            img.src = blobUrl;
+            img.style.width = "60px";
+            img.style.height = "60px";
+            img.style.objectFit = "cover";
+            img.style.borderRadius = "4px";
+
+            const removeBtn = document.createElement("span");
+            removeBtn.textContent = "×";
+            removeBtn.style.marginLeft = "5px";
+            removeBtn.style.cursor = "pointer";
+            removeBtn.style.color = "red";
+            removeBtn.style.fontSize = "18px";
+            removeBtn.onclick = () => removeImage(item);
+
+            item.appendChild(img);
+            item.appendChild(removeBtn);
+            previewDiv.appendChild(item);
+        });
+
+        makeSortable();
+    }
+
+    // 拖拽排序核心
+    let draggedItem = null;
+
+    function makeSortable() {
+        const items = document.querySelectorAll(".preview-item");
         items.forEach(item => {
-            const idx = item.dataset.index;
-            newImages.push(images[idx]);
-        });
+            item.addEventListener("dragstart", e => {
+                draggedItem = item;
+                setTimeout(() => item.style.opacity = "0.5", 0);
+            });
 
-        images = newImages;
+            item.addEventListener("dragend", e => {
+                setTimeout(() => {
+                    draggedItem.style.opacity = "1";
+                    draggedItem = null;
+                }, 0);
+            });
+
+            item.addEventListener("dragover", e => e.preventDefault());
+            item.addEventListener("dragenter", e => e.preventDefault());
+
+            item.addEventListener("drop", e => {
+                e.preventDefault();
+                if (draggedItem !== item) {
+                    const allItems = Array.from(item.parentNode.children);
+                    const fromIndex = allItems.indexOf(draggedItem);
+                    const toIndex = allItems.indexOf(item);
+
+                    // 交换 images 和 imageBlobs 的顺序
+                    [images[fromIndex], images[toIndex]] = [images[toIndex], images[fromIndex]];
+                    [imageBlobs[fromIndex], imageBlobs[toIndex]] = [imageBlobs[toIndex], imageBlobs[fromIndex]];
+
+                    // 重新渲染保持顺序一致
+                    renderPreviewList();
+                }
+            });
+        });
     }
 
+    // 生成并下载（保持你原来的逻辑，只改了获取最大宽高的方式）
     function mergeAndDownload() {
         if (images.length === 0) {
-            alert("Please upload images first！");
+            alert("请先上传图片！");
             return;
         }
 
@@ -114,26 +176,33 @@
 
         let maxWidth = 0, maxHeight = 0;
         images.forEach(img => {
-            maxWidth = Math.max(maxWidth, img.width);
-            maxHeight = Math.max(maxHeight, img.height);
+            maxWidth = Math.max(maxWidth, img.naturalWidth || img.width);
+            maxHeight = Math.max(maxHeight, img.naturalHeight || img.height);
         });
 
         const canvas = document.getElementById("spriteCanvas");
         canvas.width = columns * maxWidth;
         canvas.height = rows * maxHeight;
-
         const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         let x = 0, y = 0;
-        images.forEach(img => {
-            ctx.drawImage(img, x * maxWidth, y * maxHeight);
-            x++;
-            if (x >= columns) { x = 0; y++; }
+        images.forEach((img, i) => {
+            const drawX = x * maxWidth + (maxWidth - (img.naturalWidth || img.width)) / 2;   // 水平居中（可选）
+            const drawY = y * maxHeight + (maxHeight - (img.naturalHeight || img.height)) / 2; // 垂直居中（可选）
+            ctx.drawImage(img, drawX, drawY);
+            if (++x >= columns) {
+                x = 0;
+                y++;
+            }
         });
 
         canvas.style.width = "100%";
-        canvas.style.maxWidth = "400px";
+        canvas.style.maxWidth = "600px";
         canvas.style.height = "auto";
+        canvas.style.border = "1px solid #ddd";
+        canvas.style.marginTop = "20px";
 
         const link = document.createElement("a");
         link.download = "sprite_sheet.png";
@@ -141,6 +210,29 @@
         link.click();
     }
 </script>
+
+<!-- 简单的样式，让拖拽更好看 -->
+<style>
+    #preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+    }
+    .preview-item {
+        display: flex;
+        align-items: center;
+        background: #f0f0f0;
+        padding: 6px 10十大;
+        border-radius: 6px;
+        cursor: move;
+        user-select: none;
+        transition: all 0.2s;
+    }
+    .preview-item:hover {
+        background: #e0e0e0;
+    }
+</style>
 
 </body>
 </html>
