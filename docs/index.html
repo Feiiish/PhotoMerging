@@ -57,8 +57,7 @@
 
             const previewImg = document.createElement("img");
             previewImg.src = blobUrl;
-            previewImg.style.width = "60px";
-            previewImg.style.height = "60px";
+
             previewImg.style.objectFit = "cover";
             previewImg.style.borderRadius = "4px";
 
@@ -125,6 +124,15 @@
         makeSortable();
     }
 
+    function syncImagesByBlobs() {
+    images = imageBlobs.map(url => {
+        let img = new Image();
+        img.src = url;
+        return img;
+    });
+}
+
+
     // 拖拽排序核心
     let draggedItem = null;
 
@@ -163,52 +171,78 @@
             });
         });
     }
-
-    // 生成并下载（保持你原来的逻辑，只改了获取最大宽高的方式）
-    function mergeAndDownload() {
-        if (images.length === 0) {
-            alert("请先上传图片！");
-            return;
-        }
-
-        const columns = parseInt(document.getElementById("columnsInput").value) || 1;
-        const rows = Math.ceil(images.length / columns);
-
-        let maxWidth = 0, maxHeight = 0;
-        images.forEach(img => {
-            maxWidth = Math.max(maxWidth, img.naturalWidth || img.width);
-            maxHeight = Math.max(maxHeight, img.naturalHeight || img.height);
-        });
-
-        const canvas = document.getElementById("spriteCanvas");
-        canvas.width = columns * maxWidth;
-        canvas.height = rows * maxHeight;
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        let x = 0, y = 0;
-        images.forEach((img, i) => {
-            const drawX = x * maxWidth + (maxWidth - (img.naturalWidth || img.width)) / 2;   // 水平居中（可选）
-            const drawY = y * maxHeight + (maxHeight - (img.naturalHeight || img.height)) / 2; // 垂直居中（可选）
-            ctx.drawImage(img, drawX, drawY);
-            if (++x >= columns) {
-                x = 0;
-                y++;
-            }
-        });
-
-        canvas.style.width = "100%";
-        canvas.style.maxWidth = "600px";
-        canvas.style.height = "auto";
-        canvas.style.border = "1px solid #ddd";
-        canvas.style.marginTop = "20px";
-
-        const link = document.createElement("a");
-        link.download = "sprite_sheet.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+function mergeAndDownload() {
+    if (images.length === 0) {
+        alert("请先上传图片！");
+        return;
     }
+    syncImagesByBlobs();
+    const columns = Math.max(1, parseInt(document.getElementById("columnsInput").value) || 1);
+
+    // 计算每一列最大宽度（用于对齐）
+    const colMaxWidth = new Array(columns).fill(0);
+    images.forEach((img, i) => {
+        const col = i % columns;
+        colMaxWidth[col] = Math.max(colMaxWidth[col], img.naturalWidth);
+    });
+
+    // 预先计算最终尺寸
+    let totalHeight = 0;
+    let maxRowHeight = 0;
+
+    images.forEach((img, i) => {
+        const col = i % columns;
+
+        maxRowHeight = Math.max(maxRowHeight, img.naturalHeight);
+
+        if (col === columns - 1 || i === images.length - 1) {
+            totalHeight += maxRowHeight;
+            maxRowHeight = 0;
+        }
+    });
+
+    const totalWidth = colMaxWidth.reduce((a,b)=>a+b, 0);
+
+    // 创建最终画布（透明背景，无 padding）
+    const finalCanvas = document.getElementById("spriteCanvas");
+    finalCanvas.width  = totalWidth;
+    finalCanvas.height = totalHeight;
+
+    const ctx = finalCanvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    let xOffsets = [];
+    let xSum = 0;
+    colMaxWidth.forEach(w => { xOffsets.push(xSum); xSum += w; });
+
+    let rowY = 0;
+    let rowMaxHeight = 0;
+
+    images.forEach((img, i) => {
+        const col = i % columns;
+
+        ctx.drawImage(img, xOffsets[col], rowY, img.naturalWidth, img.naturalHeight);
+
+        rowMaxHeight = Math.max(rowMaxHeight, img.naturalHeight);
+
+        if (col === columns - 1 || i === images.length - 1) {
+            rowY += rowMaxHeight;
+            rowMaxHeight = 0;
+        }
+    });
+
+    // 下载
+    finalCanvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.download = `sprite_sheet_${finalCanvas.width}x${finalCanvas.height}.png`;
+        a.href = url;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, "image/png");
+}
+
+
 </script>
 
 <!-- 简单的样式，让拖拽更好看 -->
@@ -217,21 +251,69 @@
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        align-items: center;
+        padding: 15px;
+        border: 2px dashed #ccc;
+        border-radius: 12px;
+        background: #fafafa;
+        margin: 20px 0;
+        max-width: 100%;
+        overflow-x: auto;
     }
+
     .preview-item {
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
-        background: #f0f0f0;
-        padding: 6px 10十大;
-        border-radius: 6px;
+        background: white;
+        padding: 8px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         cursor: move;
         user-select: none;
         transition: all 0.2s;
     }
+
     .preview-item:hover {
-        background: #e0e0e0;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
     }
+
+    .preview-item img {
+        width: 80px !important;      /* 强制固定宽度 */
+        height: 80px !important;     /* 强制固定高度 */
+        object-fit: contain;         /* 完整显示，不裁剪 */
+        background: #fff;            /* 防止透明图看起来“漂浮” */
+        border-radius: 6px;
+        border: 1px solid #eee;
+    }
+
+    .preview-item span {
+        margin-left: 8px;
+        font-size: 24px;
+        color: #ff4444;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(255,68,68,0.1);
+    }
+
+    .preview-item span:hover {
+        background: rgba(255,68,68,0.2);
+    }
+#spriteCanvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border: 2px solid #333;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    background: #fff url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVQ4jWNgYGBgYGD4z0ABYBwUAOSHUqA6qA6qY0hAhYCBgYGBg+HDhz8MABaIAQAl0QfJ9EmOcQAAAABJRU5ErkJggg==') repeat; /* 可选：透明格子背景 */
+}
 </style>
 
 </body>
