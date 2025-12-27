@@ -1,8 +1,4 @@
 
-#### The project is currently only available in Chinese
-
-
-
 
 # PhotoMerging/图片合成
 ## Usage/使用
