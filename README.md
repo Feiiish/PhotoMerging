@@ -1,20 +1,27 @@
+# PhotoMerging
+A lightweight, fully local image‑merging tool for creating composite images and sprite sheets.
 
-
-# PhotoMerging/图片合成
-## Usage/使用
+### Demo  
 https://feiiish.github.io/PhotoMerging/
-- This project is a simple image merging tool where you can merge multiple images into one.
-- 该项目是一个简单的图像合并工具，您可以将多个图像合并为一个。
 
-## Features/功能
+### Features
+Customizable layout — freely set how many images appear per row
+Fully local — all processing happens in the browser, no uploads
+CC0 open source — free for personal and commercial use
+Sprite‑sheet friendly — ideal for game development pipelines
 
-- Allows you to specify the number of images per row in the merged image. 可以定制每行图片数量
-- CC0 open source 完全开源
-- fully runs on local 完全本地运行
-- Also suitable for making sprite-sheet in game development. 适合游戏开发，制作sprite-sheet场景
+### Usage
+Open the web app:
+https://feiiish.github.io/PhotoMerging/
 
+Upload or drag‑and‑drop your images
+Set the number of images per row
+Export the merged result
 
-## Future plan/之后再说
-- Adding multi language 添加多语言
-- customizing the scale of the final image. 自定义最终图像的比例。
+### Tech Stack
+HTML5 Canvas
+Vanilla JavaScript
+CSS3
+No backend required
 
+```This project is released under CC0 1.0 Universal.```
